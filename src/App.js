@@ -86,7 +86,11 @@ const App = () => {
   const [showCmsLinkModal, setShowCmsLinkModal] = useState(false); // New state for CMS link modal
 
   // Default slide data (used if Firestore is empty or for reset)
-  const defaultFactorizationGems = [
+
+const defaultFactorizationGems = useMemo(() => {
+    // This function will run only once on initial render
+    // because the dependency array for useMemo is empty.
+    return [
     {
       order: 1,
       title: "What is Factorization?",
