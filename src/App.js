@@ -317,7 +317,7 @@ const App = () => {
       setLoadingSlides(false); // Stop loading if init fails
       setFactorizationGems(defaultFactorizationGems); // Fallback
     }
-  }, [firebaseConfig]); // Depend on firebaseConfig to re-initialize if it changes (though unlikely for hardcoded)
+  }, [defaultFactorizationGems, setFirebaseError, firebaseConfig]); // Depend on firebaseConfig to re-initialize if it changes (though unlikely for hardcoded)
 
   // 2. Fetch slides from Firestore
   useEffect(() => {
@@ -356,7 +356,7 @@ const App = () => {
         setLoadingSlides(false);
         setFactorizationGems(defaultFactorizationGems);
     }
-  }, [db, userId, isAuthReady, defaultFactorizationGems]); // Added defaultFactorizationGems to dependencies
+  }, [db, userId, isAuthReady, setFirebaseError, defaultFactorizationGems]); // Added defaultFactorizationGems to dependencies
 
   // 3. MathJax Loading and Readiness (Existing logic)
   useEffect(() => {
