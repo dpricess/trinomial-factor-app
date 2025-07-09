@@ -65,6 +65,7 @@ const App = () => {
   const [userId, setUserId] = useState(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [loadingSlides, setLoadingSlides] = useState(true);
+  const [firebaseError, setFirebaseError] = useState(null); // Specific error for Firebase initialization
 
   // App specific state
   const [currentGemIndex, setCurrentGemIndex] = useState(0);
@@ -127,7 +128,7 @@ const App = () => {
   ];
 
 
-  // Data for practice problems (unchanged, but now with solutionSteps)
+  // Data for practice problems (removed duplicate entries)
   const problems = [
     {
       id: 1,
@@ -235,67 +236,97 @@ const App = () => {
     }))
   );
 
+  // Firebase Configuration: Use the global __firebase_config provided by the Canvas environment
+  const firebaseConfig = typeof window !== 'undefined' && window.__firebase_config
+    ? JSON.parse(window.__firebase_config)
+    : {
+        // Fallback to your hardcoded config if __firebase_config is not available (e.g., for local dev outside Canvas)
+        apiKey: "AIzaSyDaJBnbm_efzRqkBX6yNV4K8yDoWSIdgng",
+        authDomain: "trinomdatabase.firebaseapp.com",
+        projectId: "trinomdatabase",
+        storageBucket: "trinomdatabase.firebasestorage.app",
+        messagingSenderId: "951239176854",
+        appId: "1:951239176854:web:c36396564c1e2da02bc8b7",
+        measurementId: "G-9WK6X3P0QL"
+      };
+
+
   // 1. Firebase Initialization and Auth
   useEffect(() => {
-    //const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const  appId= "1:951239176854:web:c36396564c1e2da02bc8b7";
-
-    //const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-    // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-//The Firebase client SDKs are designed for direct interaction from the browser.
-const firebaseConfig = {
-  apiKey: "AIzaSyDaJBnbm_efzRqkBX6yNV4K8yDoWSIdgng", //public key so firebase knows its my app that is requesting data. so if someone gets this key which they can, they can get my data.
-  authDomain: "trinomdatabase.firebaseapp.com",
-  projectId: "trinomdatabase",
-  storageBucket: "trinomdatabase.firebasestorage.app",
-  messagingSenderId: "951239176854",
-  appId: "1:951239176854:web:c36396564c1e2da02bc8b7",
-  measurementId: "G-9WK6X3P0QL"
-};
-
-    if (!Object.keys(firebaseConfig).length) {
-      console.error("Firebase config not available. Cannot connect to Firestore.");
+    // Ensure window object exists before accessing global Canvas variables
+    if (typeof window === 'undefined') {
+      console.warn("Window object not available, skipping Firebase initialization.");
       setLoadingSlides(false);
-      // Fallback to default local slides if Firebase not configured
-      setFactorizationGems(defaultFactorizationGems);
+      setFirebaseError("Environment error: Window object not found. Cannot initialize Firebase.");
+      setFactorizationGems(defaultFactorizationGems); // Fallback
       return;
     }
 
-    const app = initializeApp(firebaseConfig);
-    const firestore = getFirestore(app);
-    const firebaseAuth = getAuth(app);
+    // Check if firebaseConfig is valid
+    if (!firebaseConfig || !firebaseConfig.apiKey) {
+      console.error("Firebase config is missing API key or is invalid. Cannot initialize Firebase.");
+      setLoadingSlides(false);
+      setFirebaseError("Firebase configuration error. Please ensure your project is correctly configured.");
+      setFactorizationGems(defaultFactorizationGems); // Fallback
+      return;
+    }
 
-    setDb(firestore);
-    setAuth(firebaseAuth);
+    try {
+      const app = initializeApp(firebaseConfig);
+      const firestore = getFirestore(app);
+      const firebaseAuth = getAuth(app);
 
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
-      if (user) {
-        setUserId(user.uid);
-      } else {
-        // Sign in anonymously if no user is authenticated
-        try {
-          if (typeof __initial_auth_token !== 'undefined') {
-            await signInWithCustomToken(firebaseAuth, __initial_auth_token);
-          } else {
-            await signInAnonymously(firebaseAuth);
+      setDb(firestore);
+      setAuth(firebaseAuth);
+
+      const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+        if (user) {
+          setUserId(user.uid);
+          console.log("Authenticated with user ID:", user.uid);
+        } else {
+          // Sign in anonymously if no user is authenticated
+          try {
+            const initialAuthToken = typeof window.__initial_auth_token !== 'undefined'
+              ? window.__initial_auth_token
+              : null;
+
+            if (initialAuthToken) {
+              await signInWithCustomToken(firebaseAuth, initialAuthToken);
+              console.log("Signed in with custom token.");
+            } else {
+              await signInAnonymously(firebaseAuth);
+              console.log("Signed in anonymously.");
+            }
+            setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID()); // Ensure userId is set
+          } catch (error) {
+            console.error("Firebase authentication error:", error);
+            // Specifically handle custom-token-mismatch
+            if (error.code === 'auth/custom-token-mismatch') {
+                setFirebaseError(`Authentication error: Custom token mismatch. Please ensure your Firebase project ID in the hardcoded config matches the Canvas environment's project.`);
+            } else {
+                setFirebaseError(`Authentication error: ${error.message}`);
+            }
+            setUserId(crypto.randomUUID()); // Fallback to a random ID if auth fails
           }
-          setUserId(firebaseAuth.currentUser?.uid || crypto.randomUUID()); // Ensure userId is set
-        } catch (error) {
-          console.error("Firebase authentication error:", error);
-          setUserId(crypto.randomUUID()); // Fallback to a random ID if auth fails
         }
-      }
-      setIsAuthReady(true);
-    });
+        setIsAuthReady(true);
+      });
 
-    return () => unsubscribe();
-  }, []);
+      return () => unsubscribe();
+    } catch (err) {
+      console.error("Failed to initialize Firebase:", err);
+      setFirebaseError(`Firebase initialization failed: ${err.message}`);
+      setLoadingSlides(false); // Stop loading if init fails
+      setFactorizationGems(defaultFactorizationGems); // Fallback
+    }
+  }, [firebaseConfig]); // Depend on firebaseConfig to re-initialize if it changes (though unlikely for hardcoded)
 
   // 2. Fetch slides from Firestore
   useEffect(() => {
     if (db && userId && isAuthReady) {
-      const slidesCollectionRef = collection(db, `artifacts/${__app_id}/users/${userId}/factorizationSlides`);
+      // Access global __app_id safely
+      const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+      const slidesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/factorizationSlides`);
       const q = query(slidesCollectionRef); // No orderBy due to potential index issues
 
       const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -317,13 +348,13 @@ const firebaseConfig = {
       }, (error) => {
         console.error("Error fetching slides from Firestore:", error);
         setLoadingSlides(false);
-        // Fallback to default local slides on error
-        setFactorizationGems(defaultFactorizationGems);
+        setFirebaseError(`Error fetching slides: ${error.message}. Please check Firestore Security Rules.`);
+        setFactorizationGems(defaultFactorizationGems); // Fallback to default local slides on error
       });
 
       return () => unsubscribe();
     } else if (!db && !isAuthReady) {
-        // If Firebase not configured, ensure loading state is false and use default local slides
+        // If Firebase not configured or auth not ready, ensure loading state is false and use default local slides
         setLoadingSlides(false);
         setFactorizationGems(defaultFactorizationGems);
     }
@@ -415,7 +446,8 @@ const firebaseConfig = {
   const handleWordSelection = useCallback(async (word) => {
     const trimmedWord = word.trim();
     if (trimmedWord && trimmedWord.length > 1 && db && userId) {
-      const clarificationRequestsRef = collection(db, `artifacts/${__app_id}/users/${userId}/clarificationRequests`);
+      const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+      const clarificationRequestsRef = collection(db, `artifacts/${appId}/users/${userId}/clarificationRequests`);
       try {
         await addDoc(clarificationRequestsRef, {
           term: trimmedWord.toLowerCase(),
@@ -443,10 +475,11 @@ const firebaseConfig = {
   const populateDefaultSlides = async () => {
     if (db && userId) {
       setLoadingSlides(true);
-      const slidesCollectionRef = collection(db, `artifacts/${__app_id}/users/${userId}/factorizationSlides`);
+      const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+      const slidesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/factorizationSlides`);
       // Clear existing slides first (optional, but good for "reset" functionality)
       const existingDocs = await getDocs(slidesCollectionRef);
-      const deletePromises = existingDocs.docs.map(d => deleteDoc(doc(db, `artifacts/${__app_id}/users/${userId}/factorizationSlides`, d.id)));
+      const deletePromises = existingDocs.docs.map(d => deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/factorizationSlides`, d.id)));
       await Promise.all(deletePromises);
 
       // Add default slides
@@ -470,7 +503,8 @@ const firebaseConfig = {
   // Handle submitting user interaction
   const handleSubmitInteraction = async () => {
     if (db && userId && interactionText.trim()) {
-      const interactionsCollectionRef = collection(db, `artifacts/${__app_id}/users/${userId}/userInteractions`); // Changed collection name
+      const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+      const interactionsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/userInteractions`); // Changed collection name
       try {
         await addDoc(interactionsCollectionRef, {
           type: 'question/comment/feature', // Added a type field for future filtering
@@ -499,7 +533,8 @@ const firebaseConfig = {
   // Fetch knowledge graph data (clarification requests)
   const fetchKnowledgeGraphData = useCallback(async () => {
     if (db && userId) {
-      const clarificationRequestsRef = collection(db, `artifacts/${__app_id}/users/${userId}/clarificationRequests`);
+      const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+      const clarificationRequestsRef = collection(db, `artifacts/${appId}/users/${userId}/clarificationRequests`);
       try {
         const q = query(clarificationRequestsRef, orderBy("timestamp", "desc"));
         const querySnapshot = await getDocs(q);
@@ -515,7 +550,8 @@ const firebaseConfig = {
   // Fetch 'My Interactions' data
   const fetchMyInteractionsData = useCallback(async () => {
     if (db && userId) {
-      const interactionsCollectionRef = collection(db, `artifacts/${__app_id}/users/${userId}/userInteractions`); // Changed collection name
+      const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+      const interactionsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/userInteractions`); // Changed collection name
       try {
         const q = query(interactionsCollectionRef, orderBy("timestamp", "desc"));
         const querySnapshot = await getDocs(q);
@@ -531,7 +567,8 @@ const firebaseConfig = {
   // Edit an interaction
   const handleEditInteraction = async (id, newContent) => {
     if (db && userId) {
-      const interactionDocRef = doc(db, `artifacts/${__app_id}/users/${userId}/userInteractions`, id);
+      const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+      const interactionDocRef = doc(db, `artifacts/${appId}/users/${userId}/userInteractions`, id);
       try {
         await updateDoc(interactionDocRef, {
           content: newContent,
@@ -554,7 +591,8 @@ const firebaseConfig = {
   const handleDeleteInteraction = async (id) => {
     // Using window.confirm for simplicity, replace with custom modal if needed in a production app
     if (db && userId && window.confirm("Are you sure you want to delete this entry?")) {
-      const interactionDocRef = doc(db, `artifacts/${__app_id}/users/${userId}/userInteractions`, id);
+      const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+      const interactionDocRef = doc(db, `artifacts/${appId}/users/${userId}/userInteractions`, id);
       try {
         await deleteDoc(interactionDocRef);
         setSelectionMessageText("Interaction deleted!");
@@ -1152,4 +1190,3 @@ const firebaseConfig = {
 };
 
 export default App;
-
