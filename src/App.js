@@ -239,8 +239,14 @@ const defaultFactorizationGems = useMemo(() => {
     }))
   );
 
-  // Firebase Configuration: Use the global __firebase_config provided by the Canvas environment
-  const firebaseConfig = typeof window !== 'undefined' && window.__firebase_config
+
+
+  // Use useMemo to create a stable firebaseConfig object
+  const firebaseConfig = useMemo(() => {
+    // The conditional logic goes inside the useMemo callback
+
+     // Firebase Configuration: Use the global __firebase_config provided by the Canvas environment
+  const fc = typeof window !== 'undefined' && window.__firebase_config
     ? JSON.parse(window.__firebase_config)
     : {
         // Fallback to your hardcoded config if __firebase_config is not available (e.g., for local dev outside Canvas)
@@ -252,7 +258,11 @@ const defaultFactorizationGems = useMemo(() => {
         appId: "1:951239176854:web:c36396564c1e2da02bc8b7",
         measurementId: "G-9WK6X3P0QL"
       };
-
+      return fc;
+    }
+  }, []);
+  
+ 
 
   // 1. Firebase Initialization and Auth
   useEffect(() => {
