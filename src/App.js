@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, orderBy, getDocs } from 'firebase/firestore';
 
 // Helper function to format content: bolding and numbered/bulleted lists, and line breaks
 const formatContentForHtml = (content) => {
@@ -61,18 +61,16 @@ const formatContentForHtml = (content) => {
 const App = () => {
   // Firebase state
   const [db, setDb] = useState(null);
-  const [auth, setAuth] = useState(null);
   const [userId, setUserId] = useState(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [loadingSlides, setLoadingSlides] = useState(true);
-  const [firebaseError, setFirebaseError] = useState(null); // Specific error for Firebase initialization
+  const [firebaseError, setFirebaseError] = useState(null); // Specific error for Firebase initialization - now used in UI
 
   // App specific state
   const [currentGemIndex, setCurrentGemIndex] = useState(0);
   const [showProblems, setShowProblems] = useState(false);
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0); // New state for current problem
   const [mathJaxReady, setMathJaxReady] = useState(false);
-  const [selectedTermsForClarification, setSelectedTermsForClarification] = useState(new Set());
   const [showSelectionMessage, setShowSelectionMessage] = useState(false);
   const [selectionMessageText, setSelectionMessageText] = useState('');
   const [factorizationGems, setFactorizationGems] = useState([]); // Now loaded from Firestore
@@ -117,7 +115,7 @@ const App = () => {
       order: 5,
       title: "Factoring Trinomials: The $ax^2 + bx + c$ Case (when $a \\neq 1$) - AC Method",
       content: "This applies to trinomials in the form $ax^2 + bx + c$ where $a$ is not 1. The **AC Method** (or Grouping Method) is a reliable approach:\n1.  **Multiply $a \\times c$** (the coefficient of $x^2$ by the constant term).\n2.  Find two numbers that **multiply to this product ($ac$)** and **add up to 'b'** (the coefficient of the middle term). Let these numbers be $p$ and $q$.\n3.  **Rewrite the middle term $bx$** as the sum of $px$ and $qx$. This transforms the trinomial into a four-term polynomial.\n4.  **Factor by grouping**.\n\nExample: Factor $2x^2 + 11x + 5$\n* $a \\times c = 2 \\times 5 = 10$.\n* Numbers that multiply to 10 and add to 11 are 1 and 10.\n* Rewrite $11x$ as $1x + 10x$: $2x^2 + 1x + 10x + 5$\n* Now, factor by grouping:\n  $(2x^2 + 1x) + (10x + 5)$\n  $x(2x + 1) + 5(2x + 1)$\n* Factor out the common binomial $(2x+1)$:\n  $(2x + 1)(x + 5)$",
-      simpleAltContent: "Let's factor $2x^2 + 11x + 5$.\n\n1.  **Multiply 'a' and 'c'**: $2 \\times 5 = 10$.\n\n2.  **Find two numbers**: What two numbers multiply to 10 and add up to 'b' (which is 11)? The numbers are 1 and 10.\n\n3.  **Split the middle term**: Rewrite $11x$ using those numbers: $2x^2 + 1x + 10x + 5$.\n\n4.  **Group and factor**: Now group the first two and last two terms:\n    * $(2x^2 + 1x)$ and $(10x + 5)$\n    * Factor out common terms: $x(2x+1)$ and $5(2x+1)$\n    * Notice $(2x+1)$ is common! So, $(2x+1)(x+5)$. That's it!"
+      simpleAltContent: "Let's factor $2x^2 + 11x + 5$.\n\n1.  **Multiply 'a' and 'c'**: $2 \\times 5 = 10$.\n\n2.  **Find two numbers**: What two numbers multiply to 10 and add up to 'b' (which is 11)? The numbers are 1 and 10.\n\n3.  **Split the middle term**: Rewrite $11x$ using those numbers: $2x^2 + 1x + 10x + 5。\n\n4.  **Group and factor**: Now group the first two and last two terms:\n    * $(2x^2 + 1x)$ and $(10x + 5)$\n    * Factor out common terms: $x(2x+1)$ and $5(2x+1)$\n    * Notice $(2x+1)$ is common! So, $(2x+1)(x+5)$. That's it!"
     },
     {
       order: 6,
@@ -205,7 +203,7 @@ const App = () => {
       hint: "This looks like a Perfect Square Trinomial. Check if the first term is a square ($(3y)^2$), the last term is a square ($2^2$), and the middle term is $2 \\times (3y) \\times (-2)$.",
       type: "perfectSquare",
       solutionSteps: [
-        "**Step 1: Check if the first and last terms are perfect squares.**\n* $9y^2 = (3y)^2$\n* $4 = (2)^2$",
+        "**Step 1: Check if the first and last terms are perfect squares.**\n* $9y^2 = (3y)^2。\n* $4 = (2)^2$",
         "**Step 2: Check if the middle term fits the pattern $-2ab$.**\n* $-2 \\times (3y) \\times (2) = -12y$.\nThis matches the middle term of $9y^2 - 12y + 4$.",
         "**Step 3: Write as a perfect square.** Since it fits the pattern $a^2 - 2ab + b^2 = (a-b)^2$, the factored form is $(3y-2)^2$."
       ]
@@ -277,7 +275,7 @@ const App = () => {
       const firebaseAuth = getAuth(app);
 
       setDb(firestore);
-      setAuth(firebaseAuth);
+      // setAuth(firebaseAuth); // Removed unused state setter
 
       const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
         if (user) {
@@ -358,7 +356,7 @@ const App = () => {
         setLoadingSlides(false);
         setFactorizationGems(defaultFactorizationGems);
     }
-  }, [db, userId, isAuthReady]); // Depend on db, userId, and isAuthReady
+  }, [db, userId, isAuthReady, defaultFactorizationGems]); // Added defaultFactorizationGems to dependencies
 
   // 3. MathJax Loading and Readiness (Existing logic)
   useEffect(() => {
@@ -683,7 +681,7 @@ const App = () => {
       setUserAnswer(problem.userAnswer);
       setIsCorrect(problem.isCorrect);
       setVisibleSolutionStepsCount(problem.visibleSolutionStepsCount);
-    }, [problem.id]); // Only re-sync when problem ID changes (new problem)
+    }, [problem.id, problem.userAnswer, problem.isCorrect, problem.visibleSolutionStepsCount]); // Added missing dependencies
 
     // MathJax for rendering LaTeX
     useEffect(() => {
