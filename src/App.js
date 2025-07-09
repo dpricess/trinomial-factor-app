@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { useMemo } from 'react';
 
 // Helper function to format content: bolding and numbered/bulleted lists, and line breaks
 const formatContentForHtml = (content) => {
@@ -86,7 +87,7 @@ const App = () => {
   const [showCmsLinkModal, setShowCmsLinkModal] = useState(false); // New state for CMS link modal
 
   // Default slide data (used if Firestore is empty or for reset)
-
+//useMemo(() => { ... }, []);:
 const defaultFactorizationGems = useMemo(() => {
     // This function will run only once on initial render
     // because the dependency array for useMemo is empty.
@@ -127,7 +128,7 @@ const defaultFactorizationGems = useMemo(() => {
       content: "Recognizing these patterns can significantly speed up factorization. A perfect square trinomial results from squaring a binomial.\n\nThe patterns are:\n* $a^2 + 2ab + b^2 = (a + b)^2$\n* $a^2 - 2ab + b^2 = (a - b)^2$\n\nExample: Factor $x^2 + 6x + 9$\n* Recognize $x^2$ as $a^2$ (so $a=x$)\n* $9$ as $b^2$ (so $b=3$)\n* The middle term $6x$ is $2(x)(3)$, which matches $2ab$.\nTherefore, $x^2 + 6x + 9 = (x+3)^2$.\n\nExample: Factor $4y^2 - 12y + 9$\n* Recognize $4y^2$ as $(2y)^2$ (so $a=2y$)\n* $9$ as $3^2$ (so $b=3$)\n* The middle term $-12y$ is $2(2y)(-3)$, which matches $-2ab$.\nTherefore, $4y^2 - 12y + 9 = (2y-3)^2$.",
       simpleAltContent: "Look at $x^2 + 6x + 9$. Does it look familiar?\n\n* Is the first term ($x^2$) a perfect square? Yes, $x^2 = (x)^2$.\n* Is the last term (9) a perfect square? Yes, $9 = (3)^2$.\n* Is the middle term ($6x$) twice the product of 'x' and '3'? Yes, $2 \\times x \\times 3 = 6x$.\n\nIf all these are 'yes', then it's a **Perfect Square Trinomial**! You can write it simply as $(x+3)^2$. It's a quick shortcut when you spot the pattern!"
     }
-  ];
+  ]}, []);
 
 
   // Data for practice problems (removed duplicate entries)
