@@ -238,7 +238,7 @@ const App = () => {
   // 1. Firebase Initialization and Auth
   useEffect(() => {
     //const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const  appId: "1:951239176854:web:c36396564c1e2da02bc8b7",
+    const  appId: "1:951239176854:web:c36396564c1e2da02bc8b7";
 
     //const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
     // Your web app's Firebase configuration
