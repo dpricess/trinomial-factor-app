@@ -64,7 +64,7 @@ const App = () => {
   const [userId, setUserId] = useState(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [loadingSlides, setLoadingSlides] = useState(true);
-  const [firebaseError, setFirebaseError] = useState(null); // Specific error for Firebase initialization - now used in UI
+  const [ setFirebaseError] = useState(null); // Specific error for Firebase initialization - now used in UI
 
   // App specific state
   const [currentGemIndex, setCurrentGemIndex] = useState(0);
