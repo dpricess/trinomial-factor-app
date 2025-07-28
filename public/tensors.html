@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleek Tensor Visualizations</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js CDN for 3D rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls.js for interactive camera controls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        /* Custom styles for the slideshow */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0f2f7; /* Lighter, calming blue background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .slideshow-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+            overflow: hidden;
+            width: 100%;
+            max-width: 950px; /* Slightly wider */
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #d1e8ed; /* Subtle border */
+        }
+        .slide {
+            display: none; /* Hidden by default */
+            padding: 3rem; /* More padding */
+            animation: fadeIn 0.8s ease-in-out;
+            min-height: 550px; /* Taller slides */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Center content vertically */
+            align-items: center; /* Center content horizontally */
+            text-align: center;
+        }
+        .slide.active {
+            display: flex; /* Show active slide */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            padding: 1.5rem 3rem; /* More padding */
+            border-top: 1px solid #e0e0e0; /* Lighter border */
+            background: linear-gradient(to right, #f8fcfd, #eaf5f7); /* Subtle gradient */
+        }
+        .nav-button {
+            padding: 0.85rem 2rem; /* Larger buttons */
+            border-radius: 1rem; /* Very rounded buttons */
+            font-weight: 700; /* Bolder text */
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Refined shadow */
+            background-image: linear-gradient(to right, #60a5fa, #3b82f6); /* Blue gradient */
+            color: #ffffff;
+            border: none;
+        }
+        .nav-button:hover {
+            transform: translateY(-3px); /* More pronounced lift */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            background-image: linear-gradient(to right, #3b82f6, #2563eb); /* Darker on hover */
+        }
+        .nav-button.prev {
+            background-image: linear-gradient(to right, #94a3b8, #64748b); /* Gray gradient for prev */
+        }
+        .nav-button.prev:hover {
+            background-image: linear-gradient(to right, #64748b, #475569);
+        }
+        .nav-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            background-image: none;
+            background-color: #cbd5e1; /* Flat gray when disabled */
+            color: #64748b;
+        }
+        h2 {
+            color: #1a202c; /* Darker heading color */
+            margin-bottom: 2.5rem; /* More space below heading */
+            font-size: 3rem; /* Even larger heading */
+            letter-spacing: -0.05em; /* Tighter letter spacing */
+        }
+        p {
+            color: #4a5568; /* Slightly darker paragraph text */
+            line-height: 1.7; /* Better readability */
+            max-width: 700px; /* Constrain width for readability */
+        }
+
+        /* Tensor Visual Styles */
+        .tensor-box {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 80px; /* Larger box */
+            height: 80px; /* Larger box */
+            border: 3px solid #4299e1; /* More prominent blue border */
+            border-radius: 0.75rem; /* More rounded */
+            margin: 0.5rem; /* More spacing */
+            font-size: 2rem; /* Larger number */
+            font-weight: bold;
+            color: #2c5282; /* Darker blue text */
+            background-color: #ebf8ff; /* Lightest blue background */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease;
+        }
+        .tensor-box:hover {
+            transform: translateY(-2px);
+        }
+
+        .tensor-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .tensor-matrix {
+            display: inline-block;
+            border: 4px solid #2b6cb0; /* Stronger matrix border */
+            border-radius: 1rem;
+            padding: 1rem; /* More padding */
+            margin: 1.5rem;
+            background-color: #f0f8ff; /* Lighter blue background */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Three.js Canvas specific styles */
+        #tensor3dCanvas {
+            display: block;
+            width: 450px; /* Larger canvas */
+            height: 450px; /* Larger canvas */
+            background-color: #e0f2f7; /* Match body background */
+            border-radius: 1rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        #tensor3dCanvas:hover {
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
+        }
+
+        .tensor-label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2c5282;
+            margin-bottom: 1rem;
+            letter-spacing: 0.02em;
+        }
+
+        /* Enhanced conceptual 3D/4D/5D visuals */
+        .conceptual-cube-wrapper {
+            perspective: 600px; /* For 3D effect */
+            margin: 1.5rem;
+        }
+        .conceptual-cube {
+            width: 120px; /* Larger conceptual cube */
+            height: 120px;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(25deg) rotateY(-25deg); /* More pronounced 3D feel */
+            border: 3px solid #4299e1; /* Blue border */
+            border-radius: 0.75rem;
+            background-color: #90cdf4; /* Medium blue background */
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.3); /* Stronger shadow */
+            transition: transform 0.3s ease-in-out;
+            cursor: pointer;
+        }
+        .conceptual-cube:hover {
+            transform: rotateX(20deg) rotateY(-20deg) scale(1.05);
+        }
+        .conceptual-cube::before, .conceptual-cube::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid #4299e1;
+            border-radius: 0.75rem;
+            background-color: #63b3ed; /* Darker blue for inner faces */
+            opacity: 0.8;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+        }
+        .conceptual-cube::before {
+            transform: translateZ(-30px); /* Back face */
+        }
+        .conceptual-cube::after {
+            transform: translateZ(30px); /* Front face (optional, for layering) */
+            opacity: 0.5;
+            background-color: #3182ce;
+        }
+        .conceptual-cube-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem; /* Larger label */
+            font-weight: bold;
+            color: #ffffff; /* White text for contrast */
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            z-index: 10; /* Ensure label is on top */
+        }
+
+        .tensor-4d-container-conceptual {
+            display: grid; /* Use grid for structured layout */
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Responsive grid */
+            gap: 2.5rem; /* More space between items */
+            padding: 2rem;
+            border: 4px solid #2c5282; /* Darker blue border */
+            border-radius: 1.5rem;
+            background-color: #e0f2f7; /* Lighter background */
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1); /* Inner shadow */
+            max-width: 800px; /* Max width for this container */
+        }
+
+        .tensor-5d-container-conceptual {
+            display: flex;
+            flex-direction: column; /* Stack 4D blocks vertically */
+            justify-content: center;
+            align-items: center;
+            gap: 3rem; /* More space between 4D blocks */
+            padding: 2.5rem;
+            border: 5px solid #1a202c; /* Strongest, darkest border */
+            border-radius: 2rem;
+            background-color: #cce9f0; /* Slightly darker background */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            max-width: 850px;
+        }
+
+        .conceptual-4d-block {
+            padding: 1.5rem;
+            border: 3px dashed #4a5568; /* Dashed border for conceptual 4D block */
+            border-radius: 1.25rem;
+            background-color: #d1e8ed; /* Medium light blue */
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem; /* Space between cubes inside 4D block */
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="slideshow-container">
+        <!-- Slide 1: Introduction -->
+        <div class="slide active" id="slide-1">
+            <h2 class="text-3xl font-bold mb-4 text-center">Visualizing Tensors</h2>
+            <p class="text-lg text-center leading-relaxed text-gray-600">
+                Explore the visual representation of tensors from Rank 0 to Rank 5.
+            </p>
+        </div>
+
+        <!-- Slide 2: Rank 0 Tensor (Scalar) -->
+        <div class="slide" id="slide-2">
+            <h2 class="text-3xl font-bold mb-4">Rank 0 Tensor: Scalar</h2>
+            <div class="tensor-box">7</div>
+        </div>
+
+        <!-- Slide 3: Rank 1 Tensor (Vector) -->
+        <div class="slide" id="slide-3">
+            <h2 class="text-3xl font-bold mb-4">Rank 1 Tensor: Vector</h2>
+            <div class="tensor-row">
+                <div class="tensor-box">10</div>
+                <div class="tensor-box">20</div>
+                <div class="tensor-box">30</div>
+                <div class="tensor-box">40</div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Rank 2 Tensor (Matrix) -->
+        <div class="slide" id="slide-4">
+            <h2 class="text-3xl font-bold mb-4">Rank 2 Tensor: Matrix</h2>
+            <div class="tensor-matrix">
+                <div class="tensor-row">
+                    <div class="tensor-box">1</div>
+                    <div class="tensor-box">2</div>
+                    <div class="tensor-box">3</div>
+                </div>
+                <div class="tensor-row">
+                    <div class="tensor-box">4</div>
+                    <div class="tensor-box">5</div>
+                    <div class="tensor-box">6</div>
+                </div>
+                <div class="tensor-row">
+                    <div class="tensor-box">7</div>
+                    <div class="tensor-box">8</div>
+                    <div class="tensor-box">9</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Rank 3 Tensor (Cube) - Three.js Visualization -->
+        <div class="slide" id="slide-5">
+            <h2 class="text-3xl font-bold mb-4">Rank 3 Tensor: Cube</h2>
+            <p class="text-lg leading-relaxed text-gray-600 mb-4">
+                (Drag to rotate the cube)
+            </p>
+            <canvas id="tensor3dCanvas"></canvas>
+        </div>
+
+        <!-- Slide 6: Rank 4 Tensor -->
+        <div class="slide" id="slide-6">
+            <h2 class="text-3xl font-bold mb-4">Rank 4 Tensor</h2>
+            <p class="text-lg leading-relaxed text-gray-600 mb-4">
+                An array of 3D cubes.
+            </p>
+            <div class="tensor-4d-container-conceptual">
+                <div class="conceptual-cube-wrapper">
+                    <div class="conceptual-cube"><div class="conceptual-cube-label">C1</div></div>
+                </div>
+                <div class="conceptual-cube-wrapper">
+                    <div class="conceptual-cube"><div class="conceptual-cube-label">C2</div></div>
+                </div>
+                <div class="conceptual-cube-wrapper">
+                    <div class="conceptual-cube"><div class="conceptual-cube-label">C3</div></div>
+                </div>
+                <div class="conceptual-cube-wrapper">
+                    <div class="conceptual-cube"><div class="conceptual-cube-label">C4</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Rank 5 Tensor -->
+        <div class="slide" id="slide-7">
+            <h2 class="text-3xl font-bold mb-4">Rank 5 Tensor</h2>
+            <p class="text-lg leading-relaxed text-gray-600 mb-4">
+                An array of 4D blocks.
+            </p>
+            <div class="tensor-5d-container-conceptual">
+                <div class="conceptual-4d-block">
+                    <div class="tensor-label">4D Block 0</div>
+                    <div class="conceptual-cube-wrapper" style="margin: 0.5rem;">
+                        <div class="conceptual-cube" style="width: 80px; height: 80px;"><div class="conceptual-cube-label">A</div></div>
+                    </div>
+                    <div class="conceptual-cube-wrapper" style="margin: 0.5rem;">
+                        <div class="conceptual-cube" style="width: 80px; height: 80px;"><div class="conceptual-cube-label">B</div></div>
+                    </div>
+                </div>
+                <div class="conceptual-4d-block">
+                    <div class="tensor-label">4D Block 1</div>
+                    <div class="conceptual-cube-wrapper" style="margin: 0.5rem;">
+                        <div class="conceptual-cube" style="width: 80px; height: 80px;"><div class="conceptual-cube-label">C</div></div>
+                    </div>
+                    <div class="conceptual-cube-wrapper" style="margin: 0.5rem;">
+                        <div class="conceptual-cube" style="width: 80px; height: 80px;"><div class="conceptual-cube-label">D</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="navigation-buttons">
+            <button id="prevBtn" class="nav-button prev" disabled>Previous</button>
+            <button id="nextBtn" class="nav-button next">Next</button>
+        </div>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        let currentSlideIndex = 0;
+
+        /**
+         * Shows a specific slide and updates navigation button states.
+         * @param {number} index - The index of the slide to show.
+         */
+        function showSlide(index) {
+            // Hide all slides
+            slides.forEach((slide) => {
+                slide.classList.remove('active');
+            });
+
+            // Show the current slide
+            slides[index].classList.add('active');
+
+            // If it's the Rank 3 tensor slide, initialize the Three.js scene
+            if (index === 4) { // Slide 5 has index 4
+                initThreeJS();
+            } else {
+                // Clean up Three.js scene if navigating away (optional, for resource management)
+                // For this simple case, it's not strictly necessary, but good practice.
+                // You would need to store the renderer and scene globally to dispose them.
+            }
+
+            // Update button states
+            prevBtn.disabled = (index === 0);
+            nextBtn.disabled = (index === slides.length - 1);
+            currentSlideIndex = index;
+        }
+
+        // Event listener for the "Next" button
+        nextBtn.addEventListener('click', () => {
+            if (currentSlideIndex < slides.length - 1) {
+                showSlide(currentSlideIndex + 1);
+            }
+        });
+
+        // Event listener for the "Previous" button
+        prevBtn.addEventListener('click', () => {
+            if (currentSlideIndex > 0) {
+                showSlide(currentSlideIndex - 1);
+            }
+        });
+
+        // --- Three.js setup for the Rank 3 Tensor Cube ---
+        let scene, camera, renderer, controls;
+
+        function initThreeJS() {
+            const canvas = document.getElementById('tensor3dCanvas');
+            if (!canvas) return;
+
+            // Ensure previous scene is disposed if re-initializing
+            if (renderer) {
+                renderer.dispose();
+                scene.clear();
+                if (controls) controls.dispose();
+            }
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xe0f2f7); // Match body background
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.25;
+            controls.screenSpacePanning = false;
+            controls.maxPolarAngle = Math.PI / 2;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+            directionalLight.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight);
+
+            // Create a 2x2x2 grid of smaller cubes to represent the tensor
+            const gridSize = 2; // 2x2x2 cube
+            const boxSize = 1;
+            const spacing = 0.1;
+            const totalSize = gridSize * boxSize + (gridSize - 1) * spacing;
+            const startPos = -totalSize / 2 + boxSize / 2;
+
+            const colors = [
+                0xff6347, 0x66cdaa, 0x4682b4, 0xffd700, /* Tomato, MediumAquamarine, SteelBlue, Gold */
+                0xda70d6, 0x20b2aa, 0x8b0000, 0x006400  /* Orchid, LightSeaGreen, DarkRed, DarkGreen */
+            ];
+
+            let colorIndex = 0;
+            for (let x = 0; x < gridSize; x++) {
+                for (let y = 0; y < gridSize; y++) {
+                    for (let z = 0; z < gridSize; z++) {
+                        const geometry = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
+                        const material = new THREE.MeshPhongMaterial({ color: colors[colorIndex % colors.length] });
+                        const smallCube = new THREE.Mesh(geometry, material);
+
+                        smallCube.position.set(
+                            startPos + x * (boxSize + spacing),
+                            startPos + y * (boxSize + spacing),
+                            startPos + z * (boxSize + spacing)
+                        );
+                        scene.add(smallCube);
+                        colorIndex++;
+                    }
+                }
+            }
+
+            // Animation loop
+            const animate = () => {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            };
+
+            // Handle window resize
+            const onWindowResize = () => {
+                if (canvas) {
+                    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+                }
+            };
+            window.addEventListener('resize', onWindowResize, false);
+
+            animate();
+        }
+
+        // Initialize the slideshow on window load
+        window.onload = function() {
+            showSlide(currentSlideIndex);
+        };
+    </script>
+</body>
+</html>
