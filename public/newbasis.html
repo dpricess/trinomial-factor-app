@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Basis Transformation</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Chosen Palette: Warm Neutrals with Subtle Accents */
+        /* Application Structure Plan: This SPA is designed as a simple, linear slideshow to present the explanation of vector basis transformation. Each "slide" corresponds to a logical section of the explanation (e.g., core idea, step 1, step 2, etc.). This linear structure was chosen for its simplicity and directness, allowing the user to follow the explanation step-by-step without complex navigation. Key interactions involve "Next" and "Previous" buttons to move between slides, ensuring a guided user flow. */
+        /* Visualization & Content Choices:
+        - Core Explanation: Goal -> Inform & Explain -> Textual content with analogies -> Linear progression via slides -> HTML/CSS.
+        - Mathematical Formulas: Goal -> Illustrate & Support Rigor -> LaTeX-style formulas within text -> Direct presentation -> HTML/CSS.
+        - Numerical Examples & Calculations: Goal -> Demonstrate & Clarify -> Inline text with explicit numbers -> Direct presentation -> HTML/CSS.
+        - Vector Visualizations: Goal -> Illustrate & Clarify -> Canvas drawing of vectors, bases, and transformations -> Dynamic drawing based on slide activation -> JavaScript Canvas API.
+        - Navigation: Goal -> Explore -> Simple "Next/Previous" buttons -> Click interaction -> JavaScript.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+        */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fdfaf6; /* Warm neutral background */
+        }
+        .slide {
+            display: none; /* Hidden by default */
+        }
+        .slide.active {
+            display: block; /* Show active slide */
+        }
+        /* Custom styling for math blocks to ensure they render well */
+        .math-block {
+            overflow-x: auto; /* Allow horizontal scrolling for wide equations */
+            padding: 1rem;
+            background-color: #f0f0f0;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        /* Styling for canvas containers */
+        .vector-canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; /* Max width to prevent charts from becoming excessively wide */
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; /* Base height for desktop */
+            max-height: 400px; /* Max height to prevent excessive size */
+            background-color: #ffffff; /* White background for the canvas area */
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (min-width: 768px) { /* Medium screens and up */
+            .vector-canvas-container {
+                height: 350px; /* Adjust height for larger screens */
+            }
+        }
+        @media (max-width: 640px) { /* Small screens (mobile) */
+            .vector-canvas-container {
+                height: 250px; /* Smaller height for mobile */
+                max-height: 300px;
+            }
+        }
+        canvas {
+            display: block; /* Remove extra space below canvas */
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="bg-[#fdfaf6] text-gray-800 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+
+    <div class="max-w-4xl w-full bg-white shadow-lg rounded-xl p-6 sm:p-8 md:p-10 my-8 flex flex-col">
+
+        <!-- Slide Container -->
+        <div id="slides-container" class="relative w-full overflow-hidden">
+
+            <!-- Slide 1: Title Slide -->
+            <div class="slide active">
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-center text-[#333333] mb-4">Changing the Basis of a Vector</h1>
+                <h2 class="text-xl sm:text-2xl font-semibold text-center text-[#555555]">A Practical Guide to Vector Transformation</h2>
+            </div>
+
+            <!-- Slide 2: Core Idea - It's Just a Translation -->
+            <div class="slide">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#333333] mb-4 text-center">The Core Idea: It's Just a Translation 🗺️</h2>
+                <p class="text-lg sm:text-xl text-gray-700 mb-6">Imagine giving someone directions to a coffee shop.</p>
+                <ul class="list-none space-y-4 text-lg sm:text-xl text-gray-700">
+                    <li>
+                        <strong class="text-[#6B4F4F]">Standard Basis</strong>: You might say, "Go 2 blocks East and 3 blocks North." Your basis vectors are East and North. The coordinates are (2, 3).
+                    </li>
+                    <li>
+                        <strong class="text-[#6B4F4F]">New Basis</strong>: A local might say, "Go 1 block along Main St. and 2 blocks along Park Ave." Their basis vectors are the directions of Main St. and Park Ave. The coordinates are (1, 2).
+                    </li>
+                </ul>
+                <p class="text-lg sm:text-xl text-gray-700 mt-6">The coffee shop is in the same physical spot. The vector is the same. Only its description (the coordinates) changes depending on the basis you use. The "change of basis matrix" is a translator between these two descriptions.</p>
+            </div>
+
+            <!-- Slide 3: How to Do It: Setup -->
+            <div class="slide">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#333333] mb-4 text-center">How to Do It: The Two Directions</h2>
+                <p class="text-lg sm:text-xl text-gray-700 mb-6">Let's say we have the <strong class="text-[#6B4F4F]">standard basis</strong> (we'll call it S) and a <strong class="text-[#6B4F4F]">new basis</strong> (we'll call it B). Our new basis B is made of the vectors $\mathbf{v}_1$ and $\mathbf{v}_2$.</p>
+                <p class="text-lg sm:text-xl text-gray-700 mb-4">For our example, let the new basis vectors be:</p>
+                <div class="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-8 text-xl font-mono text-gray-800">
+                    <div class="math-block">
+                        $\mathbf{v}_1 = \begin{pmatrix} 2 \\ 1 \end{pmatrix}$
+                    </div>
+                    <div class="math-block">
+                        $\mathbf{v}_2 = \begin{pmatrix} -1 \\ 1 \end{pmatrix}$
+                    </div>
+                </div>
+                <div class="vector-canvas-container">
+                    <canvas id="basisVectorsCanvas"></canvas>
+                </div>
+                <p class="text-sm text-gray-600 text-center mt-2">Visualizing the standard basis (red) and our new basis vectors (blue).</p>
+            </div>
+
+            <!-- Slide 4: Step 1: Create the Change of Basis Matrix (P) -->
+            <div class="slide">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#333333] mb-4 text-center">Step 1: Create the Change of Basis Matrix ($P$)</h2>
+                <p class="text-lg sm:text-xl text-gray-700 mb-6">This is the easy part. The change of basis matrix $P$ (from B to S) is just a matrix whose columns are the vectors of your new basis.</p>
+                <div class="flex justify-center items-center text-xl font-mono text-gray-800">
+                    <div class="math-block">
+                        $P = \begin{pmatrix} 2 & -1 \\ 1 & 1 \end{pmatrix}$
+                    </div>
+                </div>
+                <p class="text-lg sm:text-xl text-gray-700 mt-6">This matrix translates descriptions from the new basis (B) into the standard basis (S).</p>
+            </div>
+
+            <!-- Slide 5: Step 2: Transforming from the New Basis to the Standard Basis -->
+            <div class="slide">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#333333] mb-4 text-center">Step 2: Transforming from the New Basis to the Standard Basis</h2>
+                <p class="text-lg sm:text-xl text-gray-700 mb-6">This is a simple multiplication. If a vector $\mathbf{w}$ has coordinates $(c_1, c_2)$ in the new basis B, its coordinates in the standard basis S are:</p>
+                <div class="flex justify-center items-center text-xl font-mono text-gray-800">
+                    <div class="math-block">
+                        $$\text{Standard Coordinates} = P \cdot \text{New Coordinates}$$
+                    </div>
+                </div>
+                <h3 class="text-2xl sm:text-3xl font-semibold text-[#444444] mb-4 mt-8">Example:</h3>
+                <p class="text-lg sm:text-xl text-gray-700 mb-4">Suppose a vector $\mathbf{w}$ has the coordinates $(3,2)$ in our new basis B. This means $\mathbf{w} = 3\mathbf{v}_1 + 2\mathbf{v}_2$. To find its standard coordinates, we calculate:</p>
+                <div class="flex justify-center items-center text-xl font-mono text-gray-800">
+                    <div class="math-block">
+                        $$\begin{pmatrix} 2 & -1 \\ 1 & 1 \end{pmatrix} \begin{pmatrix} 3 \\ 2 \end{pmatrix} = \begin{pmatrix} 2(3) + (-1)(2) \\ 1(3) + 1(2) \end{pmatrix} = \begin{pmatrix} 4 \\ 5 \end{pmatrix}$$
+                    </div>
+                </div>
+                <p class="text-lg sm:text-xl text-gray-700 mt-6 text-center">So, the vector has coordinates $(4, 5)$ in the standard basis.</p>
+                <div class="vector-canvas-container">
+                    <canvas id="transformForwardCanvas"></canvas>
+                </div>
+                <p class="text-sm text-gray-600 text-center mt-2">The vector $\mathbf{w}$ (green) as a combination of new basis vectors (blue) and its standard coordinates.</p>
+            </div>
+
+            <!-- Slide 6: Step 3: Transforming from the Standard Basis to the New Basis (Intro) -->
+            <div class="slide">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#333333] mb-4 text-center">Step 3: Transforming from the Standard Basis to the New Basis</h2>
+                <p class="text-lg sm:text-xl text-gray-700 mb-6">To go the other way, you just need to "undo" what the matrix $P$ did. You do this by multiplying by its inverse, $P^{-1}$.</p>
+                <div class="flex justify-center items-center text-xl font-mono text-gray-800">
+                    <div class="math-block">
+                        $$\text{New Coordinates} = P^{-1} \cdot \text{Standard Coordinates}$$
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 7: How to Find the Inverse of a 2x2 Matrix -->
+            <div class="slide">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#333333] mb-4 text-center">Step 3 (Continued): How to Find the Inverse of a 2x2 Matrix</h2>
+                <p class="text-lg sm:text-xl text-gray-700 mb-6">For a general $2 \times 2$ matrix $A = \begin{pmatrix} a & b \\ c & d \end{pmatrix}$, its inverse $A^{-1}$ is calculated using the following formula:</p>
+                <div class="flex justify-center items-center text-xl font-mono text-gray-800">
+                    <div class="math-block">
+                        $$A^{-1} = \frac{1}{\text{det}(A)} \begin{pmatrix} d & -b \\ -c & a \end{pmatrix}$$
+                        where $\text{det}(A) = ad - bc$ is the determinant of the matrix.
+                    </div>
+                </div>
+                <p class="text-lg sm:text-xl text-gray-700 mt-6">The inverse exists only if the determinant is not zero.</p>
+            </div>
+
+            <!-- Slide 8: Step 3 (Continued): Finding the Inverse Matrix (P^-1) -->
+            <div class="slide">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#333333] mb-4 text-center">Step 3 (Continued): Finding the Inverse Matrix ($P^{-1}$) for our Example</h2>
+                <p class="text-lg sm:text-xl text-gray-700 mb-6">First, we find the inverse of $P$:</p>
+                <div class="flex justify-center items-center text-xl font-mono text-gray-800">
+                    <div class="math-block">
+                        $P^{-1} = \frac{1}{(2)(1) - (-1)(1)} \begin{pmatrix} 1 & -(-1) \\ -1 & 2 \end{pmatrix} = \frac{1}{3} \begin{pmatrix} 1 & 1 \\ -1 & 2 \end{pmatrix}$
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 9: Step 3 (Continued): Applying the Inverse -->
+            <div class="slide">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#333333] mb-4 text-center">Step 3 (Continued): Applying the Inverse</h2>
+                <p class="text-lg sm:text-xl text-gray-700 mb-6">Now, we multiply:</p>
+                <div class="flex justify-center items-center text-xl font-mono text-gray-800">
+                    <div class="math-block">
+                        $$\frac{1}{3} \begin{pmatrix} 1 & 1 \\ -1 & 2 \end{pmatrix} \begin{pmatrix} 4 \\ 5 \end{pmatrix} = \frac{1}{3} \begin{pmatrix} 1(4) + 1(5) \\ -1(4) + 2(5) \end{pmatrix} = \frac{1}{3} \begin{pmatrix} 9 \\ 6 \end{pmatrix} = \begin{pmatrix} 3 \\ 2 \end{pmatrix}$$
+                    </div>
+                </div>
+                <p class="text-lg sm:text-xl text-gray-700 mt-6 text-center">As expected, we get back our original coordinates $(3, 2)$ in the new basis.</p>
+                <div class="vector-canvas-container">
+                    <canvas id="transformBackwardCanvas"></canvas>
+                </div>
+                <p class="text-sm text-gray-600 text-center mt-2">The vector $\mathbf{w}$ (green) in standard coordinates, and its representation in the new basis (blue axes).</p>
+            </div>
+
+            <!-- Slide 10: Summary & Key Takeaways -->
+            <div class="slide">
+                <h2 class="text-3xl sm:text-4xl font-bold text-[#333333] mb-4 text-center">Summary & Key Takeaways</h2>
+                <ul class="list-disc list-inside space-y-3 text-lg sm:text-xl text-gray-700">
+                    <li><strong class="text-[#6B4F4F]">Change of Basis Matrix ($P$):</strong> Made by placing the *new basis vectors as columns*. It translates coordinates from the **New Basis to the Standard Basis**.</li>
+                    <li><strong class="text-[#6B4F4F]">Inverse Change of Basis Matrix ($P^{-1}$):</strong> Used to translate coordinates from the **Standard Basis back to the New Basis**.</li>
+                    <li><strong class="text-[#6B4F4F]">Core Concept:</strong> You're not changing the vector itself, just how you describe its position or direction based on a different set of reference axes.</li>
+                    <li><strong class="text-[#6B4F4F]">Tools:</strong> Matrix multiplication is the fundamental operation for this transformation.</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between mt-8">
+            <button id="prevBtn" class="px-6 py-3 bg-[#8B735C] text-white rounded-lg shadow-md hover:bg-[#A08870] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold">Previous</button>
+            <button id="nextBtn" class="px-6 py-3 bg-[#8B735C] text-white rounded-lg shadow-md hover:bg-[#A08870] transition-colors duration-300 text-lg font-semibold">Next</button>
+        </div>
+
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        let currentSlide = 0;
+
+        // --- Canvas Drawing Functions ---
+        const drawGrid = (ctx, canvas, scale) => {
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            ctx.strokeStyle = '#e0e0e0'; // Light gray for grid
+            ctx.lineWidth = 0.5;
+
+            // Vertical lines
+            for (let x = -centerX; x <= centerX; x += scale) {
+                ctx.beginPath();
+                ctx.moveTo(centerX + x, 0);
+                ctx.lineTo(centerX + x, height);
+                ctx.stroke();
+            }
+            // Horizontal lines
+            for (let y = -centerY; y <= centerY; y += scale) {
+                ctx.beginPath();
+                ctx.moveTo(0, centerY + y);
+                ctx.lineTo(width, centerY + y);
+                ctx.stroke();
+            }
+        };
+
+        const drawAxes = (ctx, canvas, scale) => {
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            ctx.strokeStyle = '#888888'; // Darker gray for axes
+            ctx.lineWidth = 1.5;
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.stroke();
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, height);
+            ctx.stroke();
+
+            // Arrows for axes
+            ctx.fillStyle = '#888888';
+            ctx.beginPath(); // X-axis arrow
+            ctx.moveTo(width - 8, centerY - 5);
+            ctx.lineTo(width, centerY);
+            ctx.lineTo(width - 8, centerY + 5);
+            ctx.fill();
+
+            ctx.beginPath(); // Y-axis arrow
+            ctx.moveTo(centerX - 5, 8);
+            ctx.lineTo(centerX, 0);
+            ctx.lineTo(centerX + 5, 8);
+            ctx.fill();
+
+            // Labels for axes
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#555555';
+            ctx.fillText('X', width - 20, centerY + 20);
+            ctx.fillText('Y', centerX - 20, 20);
+        };
+
+        const drawVector = (ctx, canvas, vector, color, label, scale, labelOffset = {x: 10, y: 10}) => {
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.fillStyle = color;
+
+            const endX = centerX + vector[0] * scale;
+            const endY = centerY - vector[1] * scale; // Y-axis is inverted in canvas
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            // Draw arrow head
+            const angle = Math.atan2(endY - centerY, endX - centerX);
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 10 * Math.cos(angle - Math.PI / 6), endY - 10 * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 10 * Math.cos(angle + Math.PI / 6), endY - 10 * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+            ctx.fill();
+
+            // Label vector
+            ctx.font = '16px Arial';
+            ctx.fillText(label, endX + labelOffset.x, endY + labelOffset.y);
+        };
+
+        const drawBasisVectors = () => {
+            const canvas = document.getElementById('basisVectorsCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const scale = Math.min(canvas.width, canvas.height) / 10; // Adjust scale for visibility
+
+            drawGrid(ctx, canvas, scale);
+            drawAxes(ctx, canvas, scale);
+
+            // Standard basis vectors (red)
+            drawVector(ctx, canvas, [1, 0], '#FF0000', 'e1', scale, {x: 5, y: -15});
+            drawVector(ctx, canvas, [0, 1], '#FF0000', 'e2', scale, {x: 10, y: 5});
+
+            // New basis vectors (blue)
+            drawVector(ctx, canvas, [2, 1], '#0000FF', 'v1=(2,1)', scale, {x: 10, y: -10});
+            drawVector(ctx, canvas, [-1, 1], '#0000FF', 'v2=(-1,1)', scale, {x: -30, y: -10});
+        };
+
+        const drawTransformForward = () => {
+            const canvas = document.getElementById('transformForwardCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const scale = Math.min(canvas.width, canvas.height) / 10;
+
+            drawGrid(ctx, canvas, scale);
+            drawAxes(ctx, canvas, scale);
+
+            // New basis vectors (blue)
+            drawVector(ctx, canvas, [2, 1], '#0000FF', 'v1', scale, {x: 10, y: -10});
+            drawVector(ctx, canvas, [-1, 1], '#0000FF', 'v2', scale, {x: -30, y: -10});
+
+            // Vector w in standard coordinates (green)
+            const w_standard = [4, 5];
+            drawVector(ctx, canvas, w_standard, '#008000', 'w=(4,5) in S', scale, {x: 10, y: 10});
+
+            // Show the components in the new basis (optional dashed lines)
+            // 3*v1 = (6,3)
+            // 2*v2 = (-2,2)
+            // w = (6,3) + (-2,2) = (4,5)
+            ctx.strokeStyle = '#808080'; // Gray for intermediate lines
+            ctx.setLineDash([5, 5]); // Dashed line
+            ctx.lineWidth = 1;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + 3 * 2 * scale, centerY - 3 * 1 * scale); // 3*v1
+            ctx.lineTo(centerX + w_standard[0] * scale, centerY - w_standard[1] * scale); // to w
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + 2 * -1 * scale, centerY - 2 * 1 * scale); // 2*v2
+            ctx.lineTo(centerX + w_standard[0] * scale, centerY - w_standard[1] * scale); // to w
+            ctx.stroke();
+
+            ctx.setLineDash([]); // Reset line dash
+        };
+
+        const drawTransformBackward = () => {
+            const canvas = document.getElementById('transformBackwardCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const scale = Math.min(canvas.width, canvas.height) / 10;
+
+            drawGrid(ctx, canvas, scale);
+            drawAxes(ctx, canvas, scale);
+
+            // New basis vectors (blue)
+            drawVector(ctx, canvas, [2, 1], '#0000FF', 'v1', scale, {x: 10, y: -10});
+            drawVector(ctx, canvas, [-1, 1], '#0000FF', 'v2', scale, {x: -30, y: -10});
+
+            // Vector w in standard coordinates (green)
+            const w_standard = [4, 5];
+            drawVector(ctx, canvas, w_standard, '#008000', 'w=(4,5) in S', scale, {x: 10, y: 10});
+
+            // Label w in new basis coordinates
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#008000';
+            ctx.fillText('w=(3,2) in B', w_standard[0] * scale + canvas.width / 2 + 10, canvas.height / 2 - w_standard[1] * scale + 30);
+        };
+        // --- End Canvas Drawing Functions ---
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.remove('active');
+                if (i === index) {
+                    slide.classList.add('active');
+                }
+            });
+            updateButtons();
+
+            // Trigger canvas drawing for the active slide
+            if (index === 2) { // Slide 3 (index 2) for basis vectors
+                drawBasisVectors();
+            } else if (index === 4) { // Slide 5 (index 4) for transform forward
+                drawTransformForward();
+            } else if (index === 8) { // Slide 9 (index 8) for transform backward
+                drawTransformBackward();
+            }
+        }
+
+        function updateButtons() {
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === slides.length - 1;
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (currentSlide > 0) {
+                currentSlide--;
+                showSlide(currentSlide);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                showSlide(currentSlide);
+            }
+        });
+
+        // Initialize slideshow and draw initial canvas if needed
+        showSlide(currentSlide);
+
+        // Redraw canvases on window resize for responsiveness
+        window.addEventListener('resize', () => {
+            if (currentSlide === 2) {
+                drawBasisVectors();
+            } else if (currentSlide === 4) {
+                drawTransformForward();
+            } else if (currentSlide === 8) {
+                drawTransformBackward();
+            }
+        });
+
+    </script>
+    <!-- Load MathJax for LaTeX rendering -->
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+            "HTML-CSS": {
+                linebreaks: { automatic: true }
+            },
+            SVG: {
+                linebreaks: { automatic: true }
+            }
+        });
+    </script>
+</body>
+</html>
